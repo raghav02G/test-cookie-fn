@@ -6,40 +6,55 @@
 </head>
 <body>
   <h1>Dashboard</h1>
-  <div id="user"></div>
+  <div id="user">Loading user...</div>
   <button id="logoutBtn">Logout</button>
 
   <script>
     const backend = "https://test-cookie-a0bv.onrender.com";
 
     async function fetchUser() {
-      const res = await fetch(`${backend}/me`, { credentials: "include" });
-      if (res.status === 401) {
-        console.log("Access token expired or invalid, refreshing...");
-        const refreshed = await fetch(`${backend}/refresh`, {
-          method: "POST",
-          credentials: "include"
-        });
+      try {
+        const res = await fetch(`${backend}/me`, { credentials: "include" });
 
-        if (refreshed.ok) {
-          console.log("Access token refreshed, retrying /me...");
-          return fetchUser();
-        } else {
-          document.getElementById("user").innerText = "Session expired. Please log in again.";
-          return;
+        if (res.status === 401) {
+          console.log("Access token expired or invalid, refreshing...");
+          const refreshed = await fetch(`${backend}/refresh`, {
+            method: "POST",
+            credentials: "include"
+          });
+
+          if (refreshed.ok) {
+            console.log("Access token refreshed, retrying /me...");
+            return fetchUser();
+          } else {
+            document.getElementById("user").innerText =
+              "Session expired. Please log in again.";
+            return;
+          }
         }
-      }
 
-      const data = await res.json();
-      document.getElementById("user").innerText =
-        `Hello ${data.user.username} (token expires at ${data.access_expires_at})`;
+        const data = await res.json();
+        document.getElementById("user").innerText =
+          `Hello ${data.user.username} (token expires at ${data.access_expires_at})`;
+
+      } catch (err) {
+        console.error("Error fetching user:", err);
+        document.getElementById("user").innerText = "Error loading user data.";
+      }
     }
 
     document.getElementById("logoutBtn").onclick = async () => {
-      await fetch(`${backend}/logout`, { credentials: "include" });
-      window.location.href = "/";
+      try {
+        await fetch(`${backend}/logout`, { credentials: "include" });
+      } catch (err) {
+        console.error("Error logging out:", err);
+      } finally {
+        // Always redirect to login
+        window.location.href = "https://test-cookie-fn.vercel.app/";
+      }
     };
 
+    // Fetch user on page load
     fetchUser();
   </script>
 </body>
